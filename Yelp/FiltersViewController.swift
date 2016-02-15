@@ -72,20 +72,6 @@ class FiltersViewController: UIViewController {
         categoriesFiltersViewController.searchSettings = searchSettings
         categoriesFiltersViewController.delegate = self
     }
-
-    func updateSortByCells() {
-        for row in 0...2 {
-            let cell = tableView.cellForRowAtIndexPath(NSIndexPath(forRow: row, inSection: 1))
-            cell?.selected = false
-            if let setting = searchSettings?.sortBy?.rawValue {
-                if setting == row {
-                    cell?.accessoryType = UITableViewCellAccessoryType.Checkmark
-                } else {
-                    cell?.accessoryType = UITableViewCellAccessoryType.None
-                }
-            }
-        }
-    }
 }
 
 extension FiltersViewController: DealSwitchTableViewCellDelegate {
@@ -127,8 +113,8 @@ extension FiltersViewController: UITableViewDataSource {
         case 1:  // Sort by.
             cell = tableView.dequeueReusableCellWithIdentifier("CheckmarkCell", forIndexPath: indexPath)
             cell.textLabel!.text = tableState[indexPath.section].cellTitles[indexPath.row]
-            if let setting = searchSettings?.sortBy?.rawValue {
-                if setting == indexPath.row {
+            if let sortByValue = searchSettings?.sortBy?.rawValue {
+                if sortByValue == indexPath.row {
                     cell.accessoryType = UITableViewCellAccessoryType.Checkmark
                 } else {
                     cell.accessoryType = UITableViewCellAccessoryType.None
@@ -140,9 +126,22 @@ extension FiltersViewController: UITableViewDataSource {
                     cell.accessoryType = UITableViewCellAccessoryType.None
                 }
             }
-        case 2:
+        case 2:  // Distance.
             cell = tableView.dequeueReusableCellWithIdentifier("CheckmarkCell", forIndexPath: indexPath)
             cell.textLabel!.text = tableState[indexPath.section].cellTitles[indexPath.row]
+            if let distanceValue = searchSettings?.distance?.rawValue {
+                if distanceValue == indexPath.row {
+                    cell.accessoryType = UITableViewCellAccessoryType.Checkmark
+                } else {
+                     cell.accessoryType = UITableViewCellAccessoryType.None
+                }
+            } else {
+                if indexPath.row == 0 {
+                    cell.accessoryType = UITableViewCellAccessoryType.Checkmark
+                } else {
+                    cell.accessoryType = UITableViewCellAccessoryType.None
+                }
+            }
         case 3:  // Categories cell button.
             cell = tableView.dequeueReusableCellWithIdentifier("CategoriesCell", forIndexPath: indexPath)
             cell.textLabel!.text = tableState[indexPath.section].cellTitles[indexPath.row]
@@ -157,7 +156,12 @@ extension FiltersViewController: UITableViewDataSource {
         switch indexPath.section {
         case 1:
             searchSettings?.sortBy = YelpSortMode(rawValue: indexPath.row)
-            updateSortByCells()
+            tableView.cellForRowAtIndexPath(indexPath)?.selected = false
+            tableView.reloadData()
+        case 2:
+            searchSettings?.distance = YelpDistance(rawValue: indexPath.row)
+            tableView.cellForRowAtIndexPath(indexPath)?.selected = false
+            tableView.reloadData()
         default:
             break
         }

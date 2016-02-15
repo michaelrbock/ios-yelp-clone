@@ -11,7 +11,7 @@ import Foundation
 struct SearchSettings {
     var searchString: String?
     var deals: Bool?
-    var distance: Int?
+    var distance: YelpDistance?
     var sortBy: YelpSortMode?
     var categories: [String]?
 

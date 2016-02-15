@@ -45,7 +45,7 @@ class BusinessesViewController: UIViewController {
 
         let searchTerm = searchSettings.searchString ?? "Restaurants"
 
-        Business.searchWithTerm(searchTerm, sort: searchSettings.sortBy, categories: searchSettings.categories, deals: searchSettings.deals) { (businesses: [Business]!, error: NSError!) -> Void in
+        Business.searchWithTerm(searchTerm, sort: searchSettings.sortBy, distance: searchSettings.distance, categories: searchSettings.categories, deals: searchSettings.deals) { (businesses: [Business]!, error: NSError!) -> Void in
             MBProgressHUD.hideHUDForView(self.view, animated: true)
             self.businesses = businesses
             self.tableView.reloadData()
