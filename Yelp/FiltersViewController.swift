@@ -37,8 +37,8 @@ class FiltersViewController: UIViewController {
 
         tableState = [
             sectionState(header: nil, size: 1, cellTitles: ["Offering a Deal"]),
-            sectionState(header: "Sort By", size: 5, cellTitles: ["1", "2", "3", "4", "5"]),
-            sectionState(header: "Distance", size: 5, cellTitles: ["1", "2", "3", "4", "5"]),
+            sectionState(header: "Sort By", size: 3, cellTitles: ["Best Match", "Distance", "Highest Rated"]),
+            sectionState(header: "Distance", size: 5, cellTitles: ["Auto", "0.3 miles", "1 mile", "5 miles", "20 miles"]),
             sectionState(header: "Categories", size: 1, cellTitles: ["View all"])
         ]
 
@@ -72,6 +72,20 @@ class FiltersViewController: UIViewController {
         categoriesFiltersViewController.searchSettings = searchSettings
         categoriesFiltersViewController.delegate = self
     }
+
+    func updateSortByCells() {
+        for row in 0...2 {
+            let cell = tableView.cellForRowAtIndexPath(NSIndexPath(forRow: row, inSection: 1))
+            cell?.selected = false
+            if let setting = searchSettings?.sortBy?.rawValue {
+                if setting == row {
+                    cell?.accessoryType = UITableViewCellAccessoryType.Checkmark
+                } else {
+                    cell?.accessoryType = UITableViewCellAccessoryType.None
+                }
+            }
+        }
+    }
 }
 
 extension FiltersViewController: DealSwitchTableViewCellDelegate {
@@ -101,24 +115,52 @@ extension FiltersViewController: UITableViewDataSource {
 
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         // cell.textLabel!.text = tableState[indexPath.section].cellTitles[indexPath.row]
-        let cell: UITableViewCell?
+        var cell: UITableViewCell = UITableViewCell()
 
         switch indexPath.section {
         case 0:  // Deal on/off.
             let dealSwitchCell = tableView.dequeueReusableCellWithIdentifier("DealSwitchTableViewCell", forIndexPath: indexPath) as! DealSwitchTableViewCell
             dealSwitchCell.delegate = self
             dealSwitchCell.onSwitch.on = searchSettings?.deals ?? false
+            dealSwitchCell.selectionStyle = UITableViewCellSelectionStyle.None
             cell = dealSwitchCell
+        case 1:  // Sort by.
+            cell = tableView.dequeueReusableCellWithIdentifier("CheckmarkCell", forIndexPath: indexPath)
+            cell.textLabel!.text = tableState[indexPath.section].cellTitles[indexPath.row]
+            if let setting = searchSettings?.sortBy?.rawValue {
+                if setting == indexPath.row {
+                    cell.accessoryType = UITableViewCellAccessoryType.Checkmark
+                } else {
+                    cell.accessoryType = UITableViewCellAccessoryType.None
+                }
+            } else {
+                if indexPath.row == 0 {
+                    cell.accessoryType = UITableViewCellAccessoryType.Checkmark
+                } else {
+                    cell.accessoryType = UITableViewCellAccessoryType.None
+                }
+            }
+        case 2:
+            cell = tableView.dequeueReusableCellWithIdentifier("CheckmarkCell", forIndexPath: indexPath)
+            cell.textLabel!.text = tableState[indexPath.section].cellTitles[indexPath.row]
+        case 3:  // Categories cell button.
+            cell = tableView.dequeueReusableCellWithIdentifier("CategoriesCell", forIndexPath: indexPath)
+            cell.textLabel!.text = tableState[indexPath.section].cellTitles[indexPath.row]
         default:
-            cell = UITableViewCell()
-            cell!.textLabel!.text = tableState[indexPath.section].cellTitles[indexPath.row]
+            break
         }
 
-        return cell!
+        return cell
     }
 
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-        
+        switch indexPath.section {
+        case 1:
+            searchSettings?.sortBy = YelpSortMode(rawValue: indexPath.row)
+            updateSortByCells()
+        default:
+            break
+        }
     }
 }
 

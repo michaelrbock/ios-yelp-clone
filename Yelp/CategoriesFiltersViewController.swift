@@ -71,10 +71,9 @@ class CategoriesFiltersViewController: UIViewController, UITableViewDataSource, 
 
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier("SwitchTableViewCell", forIndexPath: indexPath) as! SwitchTableViewCell
-
+        cell.selectionStyle = UITableViewCellSelectionStyle.None
         cell.switchLabel.text = categoriesList[indexPath.row]["name"]
         cell.delegate = self
-
         cell.onSwitch.on = switchStates[indexPath.row] ?? false
 
         return cell
