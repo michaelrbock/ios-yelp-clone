@@ -11,10 +11,10 @@ import Foundation
 struct SearchSettings {
     var searchString: String?
     var deals: Bool?
+    var distance: Int?
     var sortBy: YelpSortMode?
     var categories: [String]?
 
     init() {
-
     }
 }

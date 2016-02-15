@@ -6,12 +6,14 @@
 //  Copyright (c) 2015 Timothy Lee. All rights reserved.
 //
 
+import MBProgressHUD
 import UIKit
 
-class BusinessesViewController: UIViewController, FiltersViewControllerDelegate {
+class BusinessesViewController: UIViewController {
 
     var businesses: [Business]!
     var searchSettings = SearchSettings()
+    var newData = true
 
     var searchBar: UISearchBar!
     @IBOutlet weak var tableView: UITableView!
@@ -29,48 +31,40 @@ class BusinessesViewController: UIViewController, FiltersViewControllerDelegate 
         // Add SearchBar to the NavigationBar
         searchBar.sizeToFit()
         navigationItem.titleView = searchBar
+    }
 
-        Business.searchWithTerm("Thai", completion: { (businesses: [Business]!, error: NSError!) -> Void in
-            self.businesses = businesses
-        
-            self.tableView.reloadData()
-        })
-
-/* Example of Yelp search with more search options specified
-        Business.searchWithTerm("Restaurants", sort: .Distance, categories: ["asianfusion", "burgers"], deals: true) { (businesses: [Business]!, error: NSError!) -> Void in
-            self.businesses = businesses
-            
-            for business in businesses {
-                print(business.name!)
-                print(business.address!)
-            }
+    override func viewWillAppear(animated: Bool) {
+        if newData {
+            doSearch()
+            newData = false
         }
-*/
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    func doSearch() {
+        MBProgressHUD.showHUDAddedTo(self.view, animated: true)
+
+        let searchTerm = searchSettings.searchString ?? "Restaurants"
+
+        Business.searchWithTerm(searchTerm, sort: searchSettings.sortBy, categories: searchSettings.categories, deals: searchSettings.deals) { (businesses: [Business]!, error: NSError!) -> Void in
+            MBProgressHUD.hideHUDForView(self.view, animated: true)
+            self.businesses = businesses
+            self.tableView.reloadData()
+        }
     }
 
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-
         let navigationController = segue.destinationViewController as! UINavigationController
         let filtersViewController = navigationController.topViewController as! FiltersViewController
 
+        filtersViewController.searchSettings = searchSettings
         filtersViewController.delegate = self
     }
+}
 
-    func filtersViewController(filtersViewController: FiltersViewController, didUpdateFilters filters: [String : AnyObject]) {
-
-        let categories = filters["categories"] as? [String]
-        Business.searchWithTerm("Restaurants", sort: nil, categories: categories, deals: nil) { (businesses: [Business]!, error: NSError!) -> Void in
-            self.businesses = businesses
-            self.tableView.reloadData()
-        }
+extension BusinessesViewController: FiltersViewControllerDelegate {
+    func filtersViewController(filtersViewController: FiltersViewController, didUpdateSearchSettings searchSettings: SearchSettings) {
+        newData = true
+        self.searchSettings = searchSettings
     }
 }
 
@@ -111,9 +105,7 @@ extension BusinessesViewController: UISearchBarDelegate {
     func searchBarSearchButtonClicked(searchBar: UISearchBar) {
         searchSettings.searchString = searchBar.text
         searchBar.resignFirstResponder()
-        Business.searchWithTerm(searchSettings.searchString!, completion: { (businesses: [Business]!, error: NSError!) -> Void in
-            self.businesses = businesses
-            self.tableView.reloadData()
-        })
+
+        doSearch()
     }
 }

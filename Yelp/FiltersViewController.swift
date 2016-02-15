@@ -2,101 +2,128 @@
 //  FiltersViewController.swift
 //  Yelp
 //
-//  Created by Michael Bock on 2/12/16.
+//  Created by Michael Bock on 2/13/16.
 //  Copyright © 2016 Timothy Lee. All rights reserved.
 //
 
 import UIKit
 
-@objc protocol FiltersViewControllerDelegate {
-    optional func filtersViewController(filtersViewController: FiltersViewController, didUpdateFilters filters: [String:AnyObject])
+protocol FiltersViewControllerDelegate {
+    func filtersViewController(filtersViewController: FiltersViewController, didUpdateSearchSettings searchSettings: SearchSettings)
 }
 
-class FiltersViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, SwitchTableViewCellDelegate {
+struct sectionState {
+    var header: String?
+    var size: Int
+    var cellTitles: [String]
 
+    init(header: String?, size: Int, cellTitles: [String]) {
+        self.header = header
+        self.size = size
+        self.cellTitles = cellTitles
+    }
+}
+
+class FiltersViewController: UIViewController {
+
+    var delegate: FiltersViewControllerDelegate?
     @IBOutlet weak var tableView: UITableView!
-    weak var delegate: FiltersViewControllerDelegate?
-
-    var categories: [[String: String]]!
-    var switchStates = [Int: Bool]()
+    
+    var searchSettings: SearchSettings?
+    var tableState: [sectionState]!
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        categories = yelpCategories()
+        tableState = [
+            sectionState(header: nil, size: 1, cellTitles: ["Offering a Deal"]),
+            sectionState(header: "Sort By", size: 5, cellTitles: ["1", "2", "3", "4", "5"]),
+            sectionState(header: "Distance", size: 5, cellTitles: ["1", "2", "3", "4", "5"]),
+            sectionState(header: "Categories", size: 1, cellTitles: ["View all"])
+        ]
 
-        tableView.dataSource = self
         tableView.delegate = self
+        tableView.dataSource = self
+        tableView.rowHeight = 44
+        tableView.reloadData()
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    override func viewWillAppear(animated: Bool) {
+        super.viewWillAppear(animated)
+
+        tableView.reloadData()
     }
-    
-    @IBAction func onCancelButton(sender: UIBarButtonItem) {
+
+    @IBAction func onCancelButton() {
+        // Don't change searchSettings object.
         dismissViewControllerAnimated(true, completion: nil)
     }
 
-    @IBAction func onSearchButton(sender: UIBarButtonItem) {
+    @IBAction func onSaveButton() {
         dismissViewControllerAnimated(true, completion: nil)
 
-        var filters = [String: AnyObject]()
+        delegate?.filtersViewController(self, didUpdateSearchSettings: searchSettings!)
+    }
 
-        var selectedCategories = [String]()
-        for (row, isSelected) in switchStates {
-            if isSelected {
-                selectedCategories.append(categories[row]["code"]!)
-            }
-        }
-        if selectedCategories.count > 0 {
-            filters["categories"] = selectedCategories
-        }
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        let navigationController = segue.destinationViewController as! UINavigationController
+        let categoriesFiltersViewController = navigationController.topViewController as! CategoriesFiltersViewController
 
-        delegate?.filtersViewController?(self, didUpdateFilters: filters )
+        categoriesFiltersViewController.searchSettings = searchSettings
+        categoriesFiltersViewController.delegate = self
+    }
+}
+
+extension FiltersViewController: DealSwitchTableViewCellDelegate {
+    func dealSwitchTableViewCell(dealSwitchTableViewCell: DealSwitchTableViewCell, didChangeValue value: Bool) {
+        searchSettings?.deals = value
+    }
+}
+
+extension FiltersViewController: CategoriesFiltersViewControllerDelegate {
+    func categoriesFiltersViewController(categoriesFiltersViewController: CategoriesFiltersViewController, didUpdateFilters categories: [String]) {
+        self.searchSettings?.categories = categories
+    }
+}
+
+extension FiltersViewController: UITableViewDataSource {
+    func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+        return tableState.count
+    }
+
+    func tableView(tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        return tableState[section].header
     }
 
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categories.count
+        return tableState[section].size
     }
 
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("SwitchTableViewCell", forIndexPath: indexPath) as! SwitchTableViewCell
+        // cell.textLabel!.text = tableState[indexPath.section].cellTitles[indexPath.row]
+        let cell: UITableViewCell?
 
-        cell.switchLabel.text = categories[indexPath.row]["name"]
-        cell.delegate = self
+        switch indexPath.section {
+        case 0:  // Deal on/off.
+            let dealSwitchCell = tableView.dequeueReusableCellWithIdentifier("DealSwitchTableViewCell", forIndexPath: indexPath) as! DealSwitchTableViewCell
+            dealSwitchCell.delegate = self
+            dealSwitchCell.onSwitch.on = searchSettings?.deals ?? false
+            cell = dealSwitchCell
+        default:
+            cell = UITableViewCell()
+            cell!.textLabel!.text = tableState[indexPath.section].cellTitles[indexPath.row]
+        }
 
-        cell.onSwitch.on = switchStates[indexPath.row] ?? false
-
-        return cell
+        return cell!
     }
 
-    func switchTableViewCell(switchTableViewCell: SwitchTableViewCell, didChangeValue value: Bool) {
-        let indexPath = tableView.indexPathForCell(switchTableViewCell)!
-
-        switchStates[indexPath.row] = value
+    func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+        
     }
+}
 
-    func yelpCategories() -> [[String:String]] {
-        return [
-            ["name": "American, New", "code": "newamerican"],
-            ["name": "Italian", "code": "italian"],
-            ["name": "French", "code": "french"],
-            ["name": "German", "code": "german"],
-            ["name": "Japanese", "code": "japanese"],
-            ["name": "Mexican", "code": "mexican"],
-            ["name": "Middle Eastern", "code": "mideastern"],
-        ]
+extension FiltersViewController: UITableViewDelegate {
+    func tableView(tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 30
     }
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
-
 }
